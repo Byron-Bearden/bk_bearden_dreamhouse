@@ -1,0 +1,113 @@
+name: Validate Salesforce Metadata
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+      use-delta:
+        required: false
+        type: boolean
+        default: true
+
+      test-level:
+        required: false
+        type: string
+        default: RunLocalTests
+
+permissions:
+    contents: read
+    pull-requests: write
+    
+jobs: 
+
+    validate:
+        needs: determine-environment
+
+        runs-on: ubuntu-latest
+
+        environment:
+            name: ${{ inputs.environment }}
+
+
+        steps:
+        ###########################################################
+        # Checkout
+        ###########################################################
+            - name: Checkout Repository
+            uses: actions/checkout@v4
+            with:
+                fetch-depth: 0
+            
+            uses: salesforcecli/setup-sf@v2
+
+        ###########################################################
+        # Install SFDX Git Delta
+        ###########################################################
+            - name: Install SGD
+            run: | 
+                echo "y" | sf plugins install sfdxgit-delta
+
+        ###########################################################
+        # Authenticate Org
+        ###########################################################
+            - name: Authenticate Org
+            run: |
+                echo "${{ secrets.SF_AUTH_URL }}" > auth.txt
+
+                sf org login sfdx-url \
+                    --sfdx-url-file auth.txt \
+                    --alias target \
+                    --set-default
+
+        ###########################################################
+        # Generate Delta
+        ###########################################################
+            - name: Generate Delta Package
+                if: inputs.use-delta == true
+
+                run: |
+
+                git fetch origin ${{ github.base_ref }}
+
+                sf sgd source delta \
+                    --from origin/${{ github.base_ref }} \
+                    --to HEAD \
+                    --output-dir delta
+
+        ###########################################################
+        # Show Diff File
+        ###########################################################
+            - name: Show Diff File
+                run: |
+                    echo "--- package.xml generated with added and modified metadata ---"
+                    cat ./delta/package/package.xml
+
+        ###########################################################
+        # Create Validation Arguments
+        ###########################################################
+            - name: Build Deployment Arguments
+                id: deployargs
+
+                run: |
+
+                if [ "${{ inputs.use-delta }}" = "true" ]; then
+                    echo "manifest=delta/package/package.xml" >> $GITHUB_OUTPUT
+                else
+                    echo "manifest=manifest/package.xml" >> $GITHUB_OUTPUT
+                fi
+
+                echo "testlevel=${{ inputs.test-level }}" >> $GITHUB_OUTPUT
+
+        ###########################################################
+        # Validate Deployment
+        ###########################################################
+            - name: Validate Metadata
+                run: |
+                sf project deploy validate \
+                    --manifest "${{ steps.deployargs.outputs.manifest }}" \
+                    --target-org target \
+                    --test-level "${{ steps.deployargs.outputs.testlevel }}" \
+                    --wait 60

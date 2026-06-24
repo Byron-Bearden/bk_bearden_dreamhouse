@@ -1,0 +1,18 @@
+name: Validate PR - Dev
+
+on:
+  pull_request:
+    branches:
+      - development
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
+    with:
+      environment: dev
+      use-delta: true
+      test-level: RunLocalTests
