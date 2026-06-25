@@ -48,7 +48,8 @@ jobs:
         # Install CLI
         ###########################################################
       - name: Install Salesforce CLI
-        uses: salesforcecli/setup-sf@v2
+        run: |
+            npm install @salesforce/cli --global
 
         ###########################################################
         # Install SFDX Git Delta
