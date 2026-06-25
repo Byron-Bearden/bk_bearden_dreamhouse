@@ -65,13 +65,13 @@ jobs:
       - name: Authenticate Org
         run: |
           echo "${{ secrets.SF_JWT_SECRET_KEY }}" > server.key
-          sf org login jwt \
+          sf login org jwt \
             --client-id ${{ secrets.SF_CONSUMER_KEY }} \
             --jwt-key-file server.key \
             --username ${{ secrets.SF_USERNAME }} \
-            --instance-url https://login.salesforce.com \
-            --set-default
-          rm server.key
+            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --set-default \
+            --alias byronprod
 
         ###########################################################
         # Generate Delta
