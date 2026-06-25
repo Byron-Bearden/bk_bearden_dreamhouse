@@ -32,9 +32,6 @@ jobs:
     environment:
       name: ${{ inputs.environment }}
 
-    env:
-      NODE_VERSION: 22
-
     steps:
       - name: Echo env
         run: echo "${{ inputs.environment }}"
