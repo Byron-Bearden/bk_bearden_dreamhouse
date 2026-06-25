@@ -57,7 +57,7 @@ jobs:
 
       - name: install SFDX Git Delta
         run: |
-            echo "y" | sf plugins install sfdxgit-delta
+            echo "y" | sf plugins install sfdx-git-delta
         ###########################################################
         # Authenticate Org
         ###########################################################
